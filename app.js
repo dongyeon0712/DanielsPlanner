@@ -3,9 +3,9 @@
    and todos. (The shared mhcid-dashboard version stays empty by default for
    classmates' privacy — don't copy real personal data back into that one.) */
 const DEFAULT_SCHEDULE = [
-  { id: "c1", title: "HCID 530 A", room: "L039 200", days: ["Mon", "Wed"], start: "10:00", end: "11:00", color: "navy" },
+  { id: "c1", title: "HCID 530 A", room: "L039 200", days: ["Mon", "Wed"], start: "10:00", end: "11:20", color: "navy" },
   { id: "c2", title: "IX Design",  room: "Studio Work", days: ["Mon", "Wed"], start: "13:00", end: "16:00", color: "cream" },
-  { id: "c3", title: "HCID 511 A", room: "L039 200", days: ["Tue", "Thu"], start: "14:00", end: "15:00", color: "purple" },
+  { id: "c3", title: "HCID 511 A", room: "L039 200", days: ["Tue", "Thu"], start: "13:30", end: "15:50", color: "purple" },
 ];
 
 const DEFAULT_EVENTS = [
@@ -249,11 +249,72 @@ function renderScheduleGrid(container) {
       block.style.height = Math.max(height - 4, 18) + "px";
       block.innerHTML = `<div class="cb-title">${escapeHtml(cls.title)}</div>` +
         (cls.room ? `<div class="cb-meta">${escapeHtml(cls.room)}</div>` : "");
+      block.tabIndex = 0;
+      block.setAttribute("role", "button");
+      block.setAttribute("aria-label", `${cls.title}${cls.subject ? ", " + cls.subject : ""}, details`);
+      block.addEventListener("click", e => {
+        e.stopPropagation();
+        showClassPopover(cls, block);
+      });
+      block.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          showClassPopover(cls, block);
+        }
+      });
       col.appendChild(block);
     });
   });
 
   container.appendChild(body);
+}
+
+/* ---------- Class detail popover (click a block on the grid) ---------- */
+let closeActivePopover = null;
+
+function showClassPopover(cls, anchorEl) {
+  if (closeActivePopover) closeActivePopover();
+
+  const pop = document.createElement("div");
+  pop.className = "class-popover";
+  pop.setAttribute("role", "dialog");
+  const timeRange = `${fmtTime(cls.start)} – ${fmtTime(cls.end)}`;
+  pop.innerHTML = `
+    <button class="class-popover-close" aria-label="Close">&times;</button>
+    <div class="cp-title">${escapeHtml(cls.title)}</div>
+    ${cls.subject ? `<div class="cp-subject">${escapeHtml(cls.subject)}</div>` : ""}
+    <div class="cp-row">${cls.days.join(", ")} · ${timeRange}</div>
+    ${cls.room ? `<div class="cp-row">${escapeHtml(cls.room)}</div>` : ""}
+  `;
+  document.body.appendChild(pop);
+
+  const r = anchorEl.getBoundingClientRect();
+  const popRect = pop.getBoundingClientRect();
+  let left = r.left + r.width / 2 - popRect.width / 2;
+  left = Math.max(12, Math.min(left, window.innerWidth - popRect.width - 12));
+  let top = r.bottom + 8;
+  if (top + popRect.height > window.innerHeight - 12) top = r.top - popRect.height - 8;
+  pop.style.left = left + "px";
+  pop.style.top = Math.max(12, top) + "px";
+
+  const onClose = () => {
+    pop.remove();
+    document.removeEventListener("click", onOutsideClick, true);
+    document.removeEventListener("keydown", onKey);
+    closeActivePopover = null;
+  };
+  const onOutsideClick = e => {
+    if (!pop.contains(e.target)) onClose();
+  };
+  const onKey = e => {
+    if (e.key === "Escape") onClose();
+  };
+  pop.querySelector(".class-popover-close").addEventListener("click", onClose);
+  setTimeout(() => {
+    document.addEventListener("click", onOutsideClick, true);
+    document.addEventListener("keydown", onKey);
+  }, 0);
+  closeActivePopover = onClose;
 }
 
 function renderScheduleLegend(container) {
