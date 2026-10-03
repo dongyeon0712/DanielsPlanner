@@ -63,7 +63,6 @@ const DEFAULT_TODOS = [
 const LS_SCHEDULE = "mhcid.schedule";
 const LS_EVENTS = "mhcid.events";
 const LS_TODOS = "mhcid.todos";
-const LS_PRIVACY_DISMISSED = "mhcid.privacyNoteDismissed";
 
 function loadLS(key, fallback) {
   try {
@@ -760,13 +759,3 @@ function escapeHtml(str) {
    dashboard. (The shared mhcid-dashboard still asks for a name since it's
    used by multiple classmates on their own browsers.) */
 showTab("dashboard");
-
-/* ---------- Privacy note (dismissible) ---------- */
-const privacyNote = document.getElementById("privacyNote");
-if (loadLS(LS_PRIVACY_DISMISSED, false)) {
-  privacyNote.hidden = true;
-}
-document.getElementById("privacyNoteDismiss").addEventListener("click", () => {
-  privacyNote.hidden = true;
-  saveLS(LS_PRIVACY_DISMISSED, true);
-});
